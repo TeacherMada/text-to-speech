@@ -1,181 +1,448 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 
 <head>
-  <meta charset="UTF-8">
-  <title>Simple Text to Speech - Plugin</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NaturalVoice Studio • Text to Speech</title>
   <style>
-    * {
-      padding: 0;
+    :root {
+      color-scheme: light;
+      --bg: #0b1020;
+      --panel: #121933;
+      --panel-2: #1a2447;
+      --accent: #6ea8fe;
+      --accent-2: #9ec5fe;
+      --text: #e6ebff;
+      --muted: #b5bfd8;
+      --danger: #ff6b6b;
+      --success: #4dd4ac;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
       margin: 0;
-      box-sizing: border-box;
+      min-height: 100vh;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(circle at top, #1b2452 0%, var(--bg) 46%);
+      color: var(--text);
     }
 
-    .speak-area {
-      border: 1px solid #ccc;
-      padding: 5px;
-      float: left;
-      width: 50%;
+    .app {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 28px 18px 40px;
+      display: grid;
+      gap: 16px;
     }
 
-    .speak-area h1 {
-      float: left;
-      padding-right: 5px;
-      font-size: 18px;
+    .card {
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 18px;
+      padding: 18px;
+      backdrop-filter: blur(8px);
     }
 
-    .speak-area .speakTxt {
-      display: inline-block;
-      background: #000;
+    h1 { margin: 0; font-size: clamp(1.4rem, 2.5vw, 2rem); }
 
-      border-radius: 100%;
+    .sub { margin: 8px 0 0; color: var(--muted); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
     }
 
-    .speak-area .speakTxt.active {
-      opacity: .5;
-      cursor: not-allowed;
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 6px;
     }
 
-    .speak-area svg {
-      padding: 5px;
+    textarea,
+    select,
+    input[type="range"] {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: var(--panel);
+      color: var(--text);
+    }
 
+    textarea {
+      min-height: 190px;
+      resize: vertical;
+      padding: 12px;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    select { padding: 11px; }
+
+    .slider-wrap {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    .slider-wrap output { float: right; color: var(--accent-2); font-weight: 700; }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 11px 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .15s ease, opacity .2s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+
+    .primary { background: linear-gradient(140deg, var(--accent), #4d7bff); color: #081024; }
+    .secondary { background: #28345f; color: var(--text); }
+    .danger { background: #512636; color: #ffd8df; }
+
+    .stats {
+      margin-top: 10px;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 0.9rem;
+    }
+
+    .badge {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      padding: 6px 10px;
+    }
+
+    .status {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      font-size: 0.9rem;
+    }
+
+    .status.info { background: rgba(110, 168, 254, 0.12); border-color: rgba(110, 168, 254, 0.34); }
+    .status.ok { background: rgba(77, 212, 172, 0.12); border-color: rgba(77, 212, 172, 0.34); }
+    .status.warn { background: rgba(255, 197, 66, 0.12); border-color: rgba(255, 197, 66, 0.34); }
+
+    .examples {
+      margin-top: 8px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .examples button { background: #253565; color: #dce7ff; }
+
+    .queue {
+      margin-top: 12px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.2);
+      padding-top: 10px;
+      color: var(--muted);
+      font-size: 0.88rem;
     }
   </style>
 </head>
 
 <body>
-  <main>
-    <div class="speak-area">
-      <h1>Text 1</h1>
-      <a href="javascript:;" class="speakTxt">
-        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28.039"
-          height="22.822" viewBox="0 0 28.039 22.822">
-          <image id="speaker-filled-audio-tool" width="28.039" height="22.822"
-            xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAAAjCAYAAAANDvOtAAAABHNCSVQICAgIfAhkiAAAA+dJREFUWEfNmGmoTVEUx92QzDMZ4n0wZgoZylBkzvAMH3hJEcos8/TJPMYzJnNIyTyEUKY8MoS8SJQvvJJLHr49w/9/O+e2rPYZ9nlH965a3bPXXWud39lnn7WHRElyRJkskTxwtIDuhRaZmBJZArsYcOsdwK/4bQX9pIHjhK2P5AOhj6CvLN/Wb/gnRMwbXLf8X7A9kfgytJpzg3b4fWkBfBO+fZX/TrRnSVscPTvVGWcy72Y0FlrA1oYve7OWiumM9lPXVlrY7frpncQb8ctxaCMd4PxMBbxFu3kcsOeQxKuUrMF/K2xIHd9N+F2g4niPC7RF6dkcxF2EtvWB8YJdjpih0LvQRR7xrAJ1xX+vcd06Cmw/5ykrBvSaCXY2YvJF3DpcLzPkmQDbEWXvgfZ9m56diYAdIV+tCdb0xbPH2HNavsBQUxgP4HpyWNh9dA4JSjcT7CDYr6gcj9HuYsjLCUJ+oEkODRe2LBp1nKA/Irg6rg9B+RpsxGvM7kKS6SpRH7RvKVt7tJ8rW3fCcsBzPq5ngC1vQyh8vWDLwYfTaRXhewPX/Q33+QBbQ2GfT9gfMFSOCOUV5le6ViFIljW+SU4KfAgpJ9AYKwzHCFsCA4dBnOIHyzlff1TDYWM5lMIyt1oYCghbDEPVOEmRK2hS0K94CWI2KIbxaB8VtneZgr0OCNZsV1gSWYelDEDjmjAkMwV7ChCjBQgrziQF2xvt28L2PVOwel2xH1BTFCx7nm/AleJMwT4BQScBwklgqYIdhfZpYSvKROmqBABOpxUECNfEnCWlzECDC3BXCgkrZyzlH7npVw1Yps6rzFzLvlA2LnrkR3eVsH7r0qi0frB3kLSXSPwR140MN3oIW1dh30JYToEroXJqo88vaA0ox46teMF2Q6IHKtlatDkBSOGa5DOUbK7khVl1jYH3SajcfQbBm2C5HiiENhHB3NUSjFO+FJ4hHFe2BmFgGdMGegmaE0Tp/G+CZV1lfZXCCuCeF0i7HiocEqlVV8j7pxY7HN9y5vGKNcHy4EKeJ3DKbWxI0BS298o+F+18G1g3fhsu5gQ8odeYHYI4bmd+QvmqNRTTnoGOFPlZrbhr+BYFlnm4a9B1UfIHLWS8nrUj/kifEzhOvA/rcKTdrXsj9hKHhWmBbvrCA15G6m8edKTPCZwAljWWt1LBMr4ZlOtQjkcpW9GYF4ZO+OzG9TQVw3OE9JY96jCQOblwJ/BgYeQ+a48FbC58zyp/1ll5flDqnpX5eb41DFoA5ZjmDiSsHITjROXMWe6etMXRs2GB/Pw4rbKWusJtOM/L/pFsgSUUl4zjoJzlDpue7C8dGAAHy3+bNgAAAABJRU5ErkJggg==" />
-        </svg>
-      </a>
-    </div>
+  <main class="app">
+    <section class="card">
+      <h1>NaturalVoice Studio</h1>
+      <p class="sub">Synthèse vocale avancée multi-langues avec sélection intelligente des voix naturelles disponibles dans votre navigateur.</p>
+      <div id="supportStatus" class="status info">Initialisation du moteur vocal…</div>
+    </section>
 
-    <div class="speak-area">
-      <h1>Text 2</h1>
-      <a href="javascript:;" class="speakTxt">
-        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28.039"
-          height="22.822" viewBox="0 0 28.039 22.822">
-          <image id="speaker-filled-audio-tool" width="28.039" height="22.822"
-            xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAAAjCAYAAAANDvOtAAAABHNCSVQICAgIfAhkiAAAA+dJREFUWEfNmGmoTVEUx92QzDMZ4n0wZgoZylBkzvAMH3hJEcos8/TJPMYzJnNIyTyEUKY8MoS8SJQvvJJLHr49w/9/O+e2rPYZ9nlH965a3bPXXWud39lnn7WHRElyRJkskTxwtIDuhRaZmBJZArsYcOsdwK/4bQX9pIHjhK2P5AOhj6CvLN/Wb/gnRMwbXLf8X7A9kfgytJpzg3b4fWkBfBO+fZX/TrRnSVscPTvVGWcy72Y0FlrA1oYve7OWiumM9lPXVlrY7frpncQb8ctxaCMd4PxMBbxFu3kcsOeQxKuUrMF/K2xIHd9N+F2g4niPC7RF6dkcxF2EtvWB8YJdjpih0LvQRR7xrAJ1xX+vcd06Cmw/5ykrBvSaCXY2YvJF3DpcLzPkmQDbEWXvgfZ9m56diYAdIV+tCdb0xbPH2HNavsBQUxgP4HpyWNh9dA4JSjcT7CDYr6gcj9HuYsjLCUJ+oEkODRe2LBp1nKA/Irg6rg9B+RpsxGvM7kKS6SpRH7RvKVt7tJ8rW3fCcsBzPq5ngC1vQyh8vWDLwYfTaRXhewPX/Q33+QBbQ2GfT9gfMFSOCOUV5le6ViFIljW+SU4KfAgpJ9AYKwzHCFsCA4dBnOIHyzlff1TDYWM5lMIyt1oYCghbDEPVOEmRK2hS0K94CWI2KIbxaB8VtneZgr0OCNZsV1gSWYelDEDjmjAkMwV7ChCjBQgrziQF2xvt28L2PVOwel2xH1BTFCx7nm/AleJMwT4BQScBwklgqYIdhfZpYSvKROmqBABOpxUECNfEnCWlzECDC3BXCgkrZyzlH7npVw1Yps6rzFzLvlA2LnrkR3eVsH7r0qi0frB3kLSXSPwR140MN3oIW1dh30JYToEroXJqo88vaA0ox46teMF2Q6IHKtlatDkBSOGa5DOUbK7khVl1jYH3SajcfQbBm2C5HiiENhHB3NUSjFO+FJ4hHFe2BmFgGdMGegmaE0Tp/G+CZV1lfZXCCuCeF0i7HiocEqlVV8j7pxY7HN9y5vGKNcHy4EKeJ3DKbWxI0BS298o+F+18G1g3fhsu5gQ8odeYHYI4bmd+QvmqNRTTnoGOFPlZrbhr+BYFlnm4a9B1UfIHLWS8nrUj/kifEzhOvA/rcKTdrXsj9hKHhWmBbvrCA15G6m8edKTPCZwAljWWt1LBMr4ZlOtQjkcpW9GYF4ZO+OzG9TQVw3OE9JY96jCQOblwJ/BgYeQ+a48FbC58zyp/1ll5flDqnpX5eb41DFoA5ZjmDiSsHITjROXMWe6etMXRs2GB/Pw4rbKWusJtOM/L/pFsgSUUl4zjoJzlDpue7C8dGAAHy3+bNgAAAABJRU5ErkJggg==" />
-        </svg>
-      </a>
-    </div>
+    <section class="card">
+      <label for="ttsText">Texte à lire</label>
+      <textarea id="ttsText" placeholder="Collez ou écrivez votre texte ici…">Bonjour et bienvenue. Cette application peut lire du texte en plusieurs langues avec une voix naturelle disponible localement.</textarea>
 
-    <div class="speak-area">
-      <h1>Text 3</h1>
-      <a href="javascript:;" class="speakTxt">
-        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28.039"
-          height="22.822" viewBox="0 0 28.039 22.822">
-          <image id="speaker-filled-audio-tool" width="28.039" height="22.822"
-            xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAAAjCAYAAAANDvOtAAAABHNCSVQICAgIfAhkiAAAA+dJREFUWEfNmGmoTVEUx92QzDMZ4n0wZgoZylBkzvAMH3hJEcos8/TJPMYzJnNIyTyEUKY8MoS8SJQvvJJLHr49w/9/O+e2rPYZ9nlH965a3bPXXWud39lnn7WHRElyRJkskTxwtIDuhRaZmBJZArsYcOsdwK/4bQX9pIHjhK2P5AOhj6CvLN/Wb/gnRMwbXLf8X7A9kfgytJpzg3b4fWkBfBO+fZX/TrRnSVscPTvVGWcy72Y0FlrA1oYve7OWiumM9lPXVlrY7frpncQb8ctxaCMd4PxMBbxFu3kcsOeQxKuUrMF/K2xIHd9N+F2g4niPC7RF6dkcxF2EtvWB8YJdjpih0LvQRR7xrAJ1xX+vcd06Cmw/5ykrBvSaCXY2YvJF3DpcLzPkmQDbEWXvgfZ9m56diYAdIV+tCdb0xbPH2HNavsBQUxgP4HpyWNh9dA4JSjcT7CDYr6gcj9HuYsjLCUJ+oEkODRe2LBp1nKA/Irg6rg9B+RpsxGvM7kKS6SpRH7RvKVt7tJ8rW3fCcsBzPq5ngC1vQyh8vWDLwYfTaRXhewPX/Q33+QBbQ2GfT9gfMFSOCOUV5le6ViFIljW+SU4KfAgpJ9AYKwzHCFsCA4dBnOIHyzlff1TDYWM5lMIyt1oYCghbDEPVOEmRK2hS0K94CWI2KIbxaB8VtneZgr0OCNZsV1gSWYelDEDjmjAkMwV7ChCjBQgrziQF2xvt28L2PVOwel2xH1BTFCx7nm/AleJMwT4BQScBwklgqYIdhfZpYSvKROmqBABOpxUECNfEnCWlzECDC3BXCgkrZyzlH7npVw1Yps6rzFzLvlA2LnrkR3eVsH7r0qi0frB3kLSXSPwR140MN3oIW1dh30JYToEroXJqo88vaA0ox46teMF2Q6IHKtlatDkBSOGa5DOUbK7khVl1jYH3SajcfQbBm2C5HiiENhHB3NUSjFO+FJ4hHFe2BmFgGdMGegmaE0Tp/G+CZV1lfZXCCuCeF0i7HiocEqlVV8j7pxY7HN9y5vGKNcHy4EKeJ3DKbWxI0BS298o+F+18G1g3fhsu5gQ8odeYHYI4bmd+QvmqNRTTnoGOFPlZrbhr+BYFlnm4a9B1UfIHLWS8nrUj/kifEzhOvA/rcKTdrXsj9hKHhWmBbvrCA15G6m8edKTPCZwAljWWt1LBMr4ZlOtQjkcpW9GYF4ZO+OzG9TQVw3OE9JY96jCQOblwJ/BgYeQ+a48FbC58zyp/1ll5flDqnpX5eb41DFoA5ZjmDiSsHITjROXMWe6etMXRs2GB/Pw4rbKWusJtOM/L/pFsgSUUl4zjoJzlDpue7C8dGAAHy3+bNgAAAABJRU5ErkJggg==" />
-        </svg>
-      </a>
-    </div>
+      <div class="examples">
+        <button type="button" data-sample="fr">Exemple Français</button>
+        <button type="button" data-sample="en">English Sample</button>
+        <button type="button" data-sample="es">Ejemplo Español</button>
+        <button type="button" data-sample="ar">مثال عربي</button>
+        <button type="button" data-sample="ja">日本語サンプル</button>
+      </div>
 
-    <div class="speak-area">
-      <h1>Text 4</h1>
-      <a href="javascript:;" class="speakTxt">
-        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28.039"
-          height="22.822" viewBox="0 0 28.039 22.822">
-          <image id="speaker-filled-audio-tool" width="28.039" height="22.822"
-            xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAAAjCAYAAAANDvOtAAAABHNCSVQICAgIfAhkiAAAA+dJREFUWEfNmGmoTVEUx92QzDMZ4n0wZgoZylBkzvAMH3hJEcos8/TJPMYzJnNIyTyEUKY8MoS8SJQvvJJLHr49w/9/O+e2rPYZ9nlH965a3bPXXWud39lnn7WHRElyRJkskTxwtIDuhRaZmBJZArsYcOsdwK/4bQX9pIHjhK2P5AOhj6CvLN/Wb/gnRMwbXLf8X7A9kfgytJpzg3b4fWkBfBO+fZX/TrRnSVscPTvVGWcy72Y0FlrA1oYve7OWiumM9lPXVlrY7frpncQb8ctxaCMd4PxMBbxFu3kcsOeQxKuUrMF/K2xIHd9N+F2g4niPC7RF6dkcxF2EtvWB8YJdjpih0LvQRR7xrAJ1xX+vcd06Cmw/5ykrBvSaCXY2YvJF3DpcLzPkmQDbEWXvgfZ9m56diYAdIV+tCdb0xbPH2HNavsBQUxgP4HpyWNh9dA4JSjcT7CDYr6gcj9HuYsjLCUJ+oEkODRe2LBp1nKA/Irg6rg9B+RpsxGvM7kKS6SpRH7RvKVt7tJ8rW3fCcsBzPq5ngC1vQyh8vWDLwYfTaRXhewPX/Q33+QBbQ2GfT9gfMFSOCOUV5le6ViFIljW+SU4KfAgpJ9AYKwzHCFsCA4dBnOIHyzlff1TDYWM5lMIyt1oYCghbDEPVOEmRK2hS0K94CWI2KIbxaB8VtneZgr0OCNZsV1gSWYelDEDjmjAkMwV7ChCjBQgrziQF2xvt28L2PVOwel2xH1BTFCx7nm/AleJMwT4BQScBwklgqYIdhfZpYSvKROmqBABOpxUECNfEnCWlzECDC3BXCgkrZyzlH7npVw1Yps6rzFzLvlA2LnrkR3eVsH7r0qi0frB3kLSXSPwR140MN3oIW1dh30JYToEroXJqo88vaA0ox46teMF2Q6IHKtlatDkBSOGa5DOUbK7khVl1jYH3SajcfQbBm2C5HiiENhHB3NUSjFO+FJ4hHFe2BmFgGdMGegmaE0Tp/G+CZV1lfZXCCuCeF0i7HiocEqlVV8j7pxY7HN9y5vGKNcHy4EKeJ3DKbWxI0BS298o+F+18G1g3fhsu5gQ8odeYHYI4bmd+QvmqNRTTnoGOFPlZrbhr+BYFlnm4a9B1UfIHLWS8nrUj/kifEzhOvA/rcKTdrXsj9hKHhWmBbvrCA15G6m8edKTPCZwAljWWt1LBMr4ZlOtQjkcpW9GYF4ZO+OzG9TQVw3OE9JY96jCQOblwJ/BgYeQ+a48FbC58zyp/1ll5flDqnpX5eb41DFoA5ZjmDiSsHITjROXMWe6etMXRs2GB/Pw4rbKWusJtOM/L/pFsgSUUl4zjoJzlDpue7C8dGAAHy3+bNgAAAABJRU5ErkJggg==" />
-        </svg>
-      </a>
-    </div>
+      <div class="stats">
+        <span class="badge" id="textStats">0 caractères • 0 mots</span>
+        <span class="badge" id="voiceStats">Voix détectées: 0</span>
+      </div>
+    </section>
 
-    <div class="speak-area">
-      <h1>Text 5</h1>
-      <a href="javascript:;" class="speakTxt">
-        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28.039"
-          height="22.822" viewBox="0 0 28.039 22.822">
-          <image id="speaker-filled-audio-tool" width="28.039" height="22.822"
-            xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAAAjCAYAAAANDvOtAAAABHNCSVQICAgIfAhkiAAAA+dJREFUWEfNmGmoTVEUx92QzDMZ4n0wZgoZylBkzvAMH3hJEcos8/TJPMYzJnNIyTyEUKY8MoS8SJQvvJJLHr49w/9/O+e2rPYZ9nlH965a3bPXXWud39lnn7WHRElyRJkskTxwtIDuhRaZmBJZArsYcOsdwK/4bQX9pIHjhK2P5AOhj6CvLN/Wb/gnRMwbXLf8X7A9kfgytJpzg3b4fWkBfBO+fZX/TrRnSVscPTvVGWcy72Y0FlrA1oYve7OWiumM9lPXVlrY7frpncQb8ctxaCMd4PxMBbxFu3kcsOeQxKuUrMF/K2xIHd9N+F2g4niPC7RF6dkcxF2EtvWB8YJdjpih0LvQRR7xrAJ1xX+vcd06Cmw/5ykrBvSaCXY2YvJF3DpcLzPkmQDbEWXvgfZ9m56diYAdIV+tCdb0xbPH2HNavsBQUxgP4HpyWNh9dA4JSjcT7CDYr6gcj9HuYsjLCUJ+oEkODRe2LBp1nKA/Irg6rg9B+RpsxGvM7kKS6SpRH7RvKVt7tJ8rW3fCcsBzPq5ngC1vQyh8vWDLwYfTaRXhewPX/Q33+QBbQ2GfT9gfMFSOCOUV5le6ViFIljW+SU4KfAgpJ9AYKwzHCFsCA4dBnOIHyzlff1TDYWM5lMIyt1oYCghbDEPVOEmRK2hS0K94CWI2KIbxaB8VtneZgr0OCNZsV1gSWYelDEDjmjAkMwV7ChCjBQgrziQF2xvt28L2PVOwel2xH1BTFCx7nm/AleJMwT4BQScBwklgqYIdhfZpYSvKROmqBABOpxUECNfEnCWlzECDC3BXCgkrZyzlH7npVw1Yps6rzFzLvlA2LnrkR3eVsH7r0qi0frB3kLSXSPwR140MN3oIW1dh30JYToEroXJqo88vaA0ox46teMF2Q6IHKtlatDkBSOGa5DOUbK7khVl1jYH3SajcfQbBm2C5HiiENhHB3NUSjFO+FJ4hHFe2BmFgGdMGegmaE0Tp/G+CZV1lfZXCCuCeF0i7HiocEqlVV8j7pxY7HN9y5vGKNcHy4EKeJ3DKbWxI0BS298o+F+18G1g3fhsu5gQ8odeYHYI4bmd+QvmqNRTTnoGOFPlZrbhr+BYFlnm4a9B1UfIHLWS8nrUj/kifEzhOvA/rcKTdrXsj9hKHhWmBbvrCA15G6m8edKTPCZwAljWWt1LBMr4ZlOtQjkcpW9GYF4ZO+OzG9TQVw3OE9JY96jCQOblwJ/BgYeQ+a48FbC58zyp/1ll5flDqnpX5eb41DFoA5ZjmDiSsHITjROXMWe6etMXRs2GB/Pw4rbKWusJtOM/L/pFsgSUUl4zjoJzlDpue7C8dGAAHy3+bNgAAAABJRU5ErkJggg==" />
-        </svg>
-      </a>
-    </div>
+    <section class="card">
+      <div class="grid">
+        <div>
+          <label for="languageSelect">Langue</label>
+          <select id="languageSelect"></select>
+        </div>
+        <div>
+          <label for="voiceSelect">Voix</label>
+          <select id="voiceSelect"></select>
+        </div>
 
-    <div class="speak-area">
-      <h1>Text 6</h1>
-      <a href="javascript:;" class="speakTxt">
-        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28.039"
-          height="22.822" viewBox="0 0 28.039 22.822">
-          <image id="speaker-filled-audio-tool" width="28.039" height="22.822"
-            xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAAAjCAYAAAANDvOtAAAABHNCSVQICAgIfAhkiAAAA+dJREFUWEfNmGmoTVEUx92QzDMZ4n0wZgoZylBkzvAMH3hJEcos8/TJPMYzJnNIyTyEUKY8MoS8SJQvvJJLHr49w/9/O+e2rPYZ9nlH965a3bPXXWud39lnn7WHRElyRJkskTxwtIDuhRaZmBJZArsYcOsdwK/4bQX9pIHjhK2P5AOhj6CvLN/Wb/gnRMwbXLf8X7A9kfgytJpzg3b4fWkBfBO+fZX/TrRnSVscPTvVGWcy72Y0FlrA1oYve7OWiumM9lPXVlrY7frpncQb8ctxaCMd4PxMBbxFu3kcsOeQxKuUrMF/K2xIHd9N+F2g4niPC7RF6dkcxF2EtvWB8YJdjpih0LvQRR7xrAJ1xX+vcd06Cmw/5ykrBvSaCXY2YvJF3DpcLzPkmQDbEWXvgfZ9m56diYAdIV+tCdb0xbPH2HNavsBQUxgP4HpyWNh9dA4JSjcT7CDYr6gcj9HuYsjLCUJ+oEkODRe2LBp1nKA/Irg6rg9B+RpsxGvM7kKS6SpRH7RvKVt7tJ8rW3fCcsBzPq5ngC1vQyh8vWDLwYfTaRXhewPX/Q33+QBbQ2GfT9gfMFSOCOUV5le6ViFIljW+SU4KfAgpJ9AYKwzHCFsCA4dBnOIHyzlff1TDYWM5lMIyt1oYCghbDEPVOEmRK2hS0K94CWI2KIbxaB8VtneZgr0OCNZsV1gSWYelDEDjmjAkMwV7ChCjBQgrziQF2xvt28L2PVOwel2xH1BTFCx7nm/AleJMwT4BQScBwklgqYIdhfZpYSvKROmqBABOpxUECNfEnCWlzECDC3BXCgkrZyzlH7npVw1Yps6rzFzLvlA2LnrkR3eVsH7r0qi0frB3kLSXSPwR140MN3oIW1dh30JYToEroXJqo88vaA0ox46teMF2Q6IHKtlatDkBSOGa5DOUbK7khVl1jYH3SajcfQbBm2C5HiiENhHB3NUSjFO+FJ4hHFe2BmFgGdMGegmaE0Tp/G+CZV1lfZXCCuCeF0i7HiocEqlVV8j7pxY7HN9y5vGKNcHy4EKeJ3DKbWxI0BS298o+F+18G1g3fhsu5gQ8odeYHYI4bmd+QvmqNRTTnoGOFPlZrbhr+BYFlnm4a9B1UfIHLWS8nrUj/kifEzhOvA/rcKTdrXsj9hKHhWmBbvrCA15G6m8edKTPCZwAljWWt1LBMr4ZlOtQjkcpW9GYF4ZO+OzG9TQVw3OE9JY96jCQOblwJ/BgYeQ+a48FbC58zyp/1ll5flDqnpX5eb41DFoA5ZjmDiSsHITjROXMWe6etMXRs2GB/Pw4rbKWusJtOM/L/pFsgSUUl4zjoJzlDpue7C8dGAAHy3+bNgAAAABJRU5ErkJggg==" />
-        </svg>
-      </a>
-    </div>
+        <div class="slider-wrap">
+          <label for="rateRange">Vitesse <output id="rateValue">1</output></label>
+          <input id="rateRange" type="range" min="0.6" max="1.6" step="0.05" value="1" />
+        </div>
+        <div class="slider-wrap">
+          <label for="pitchRange">Tonalité <output id="pitchValue">1</output></label>
+          <input id="pitchRange" type="range" min="0.7" max="1.4" step="0.05" value="1" />
+        </div>
+        <div class="slider-wrap">
+          <label for="volumeRange">Volume <output id="volumeValue">1</output></label>
+          <input id="volumeRange" type="range" min="0" max="1" step="0.05" value="1" />
+        </div>
+      </div>
 
-    <div class="speak-area">
-      <h1>Text 7</h1>
-      <a href="javascript:;" class="speakTxt">
-        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28.039"
-          height="22.822" viewBox="0 0 28.039 22.822">
-          <image id="speaker-filled-audio-tool" width="28.039" height="22.822"
-            xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAAAjCAYAAAANDvOtAAAABHNCSVQICAgIfAhkiAAAA+dJREFUWEfNmGmoTVEUx92QzDMZ4n0wZgoZylBkzvAMH3hJEcos8/TJPMYzJnNIyTyEUKY8MoS8SJQvvJJLHr49w/9/O+e2rPYZ9nlH965a3bPXXWud39lnn7WHRElyRJkskTxwtIDuhRaZmBJZArsYcOsdwK/4bQX9pIHjhK2P5AOhj6CvLN/Wb/gnRMwbXLf8X7A9kfgytJpzg3b4fWkBfBO+fZX/TrRnSVscPTvVGWcy72Y0FlrA1oYve7OWiumM9lPXVlrY7frpncQb8ctxaCMd4PxMBbxFu3kcsOeQxKuUrMF/K2xIHd9N+F2g4niPC7RF6dkcxF2EtvWB8YJdjpih0LvQRR7xrAJ1xX+vcd06Cmw/5ykrBvSaCXY2YvJF3DpcLzPkmQDbEWXvgfZ9m56diYAdIV+tCdb0xbPH2HNavsBQUxgP4HpyWNh9dA4JSjcT7CDYr6gcj9HuYsjLCUJ+oEkODRe2LBp1nKA/Irg6rg9B+RpsxGvM7kKS6SpRH7RvKVt7tJ8rW3fCcsBzPq5ngC1vQyh8vWDLwYfTaRXhewPX/Q33+QBbQ2GfT9gfMFSOCOUV5le6ViFIljW+SU4KfAgpJ9AYKwzHCFsCA4dBnOIHyzlff1TDYWM5lMIyt1oYCghbDEPVOEmRK2hS0K94CWI2KIbxaB8VtneZgr0OCNZsV1gSWYelDEDjmjAkMwV7ChCjBQgrziQF2xvt28L2PVOwel2xH1BTFCx7nm/AleJMwT4BQScBwklgqYIdhfZpYSvKROmqBABOpxUECNfEnCWlzECDC3BXCgkrZyzlH7npVw1Yps6rzFzLvlA2LnrkR3eVsH7r0qi0frB3kLSXSPwR140MN3oIW1dh30JYToEroXJqo88vaA0ox46teMF2Q6IHKtlatDkBSOGa5DOUbK7khVl1jYH3SajcfQbBm2C5HiiENhHB3NUSjFO+FJ4hHFe2BmFgGdMGegmaE0Tp/G+CZV1lfZXCCuCeF0i7HiocEqlVV8j7pxY7HN9y5vGKNcHy4EKeJ3DKbWxI0BS298o+F+18G1g3fhsu5gQ8odeYHYI4bmd+QvmqNRTTnoGOFPlZrbhr+BYFlnm4a9B1UfIHLWS8nrUj/kifEzhOvA/rcKTdrXsj9hKHhWmBbvrCA15G6m8edKTPCZwAljWWt1LBMr4ZlOtQjkcpW9GYF4ZO+OzG9TQVw3OE9JY96jCQOblwJ/BgYeQ+a48FbC58zyp/1ll5flDqnpX5eb41DFoA5ZjmDiSsHITjROXMWe6etMXRs2GB/Pw4rbKWusJtOM/L/pFsgSUUl4zjoJzlDpue7C8dGAAHy3+bNgAAAABJRU5ErkJggg==" />
-        </svg>
-      </a>
-    </div>
+      <div class="actions">
+        <button id="playBtn" class="primary" type="button">▶ Lire</button>
+        <button id="pauseBtn" class="secondary" type="button">⏸ Pause/Reprendre</button>
+        <button id="stopBtn" class="danger" type="button">⏹ Stop</button>
+      </div>
 
-    <div class="speak-area">
-      <h1>Text 8</h1>
-      <a href="javascript:;" class="speakTxt">
-        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28.039"
-          height="22.822" viewBox="0 0 28.039 22.822">
-          <image id="speaker-filled-audio-tool" width="28.039" height="22.822"
-            xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAAAjCAYAAAANDvOtAAAABHNCSVQICAgIfAhkiAAAA+dJREFUWEfNmGmoTVEUx92QzDMZ4n0wZgoZylBkzvAMH3hJEcos8/TJPMYzJnNIyTyEUKY8MoS8SJQvvJJLHr49w/9/O+e2rPYZ9nlH965a3bPXXWud39lnn7WHRElyRJkskTxwtIDuhRaZmBJZArsYcOsdwK/4bQX9pIHjhK2P5AOhj6CvLN/Wb/gnRMwbXLf8X7A9kfgytJpzg3b4fWkBfBO+fZX/TrRnSVscPTvVGWcy72Y0FlrA1oYve7OWiumM9lPXVlrY7frpncQb8ctxaCMd4PxMBbxFu3kcsOeQxKuUrMF/K2xIHd9N+F2g4niPC7RF6dkcxF2EtvWB8YJdjpih0LvQRR7xrAJ1xX+vcd06Cmw/5ykrBvSaCXY2YvJF3DpcLzPkmQDbEWXvgfZ9m56diYAdIV+tCdb0xbPH2HNavsBQUxgP4HpyWNh9dA4JSjcT7CDYr6gcj9HuYsjLCUJ+oEkODRe2LBp1nKA/Irg6rg9B+RpsxGvM7kKS6SpRH7RvKVt7tJ8rW3fCcsBzPq5ngC1vQyh8vWDLwYfTaRXhewPX/Q33+QBbQ2GfT9gfMFSOCOUV5le6ViFIljW+SU4KfAgpJ9AYKwzHCFsCA4dBnOIHyzlff1TDYWM5lMIyt1oYCghbDEPVOEmRK2hS0K94CWI2KIbxaB8VtneZgr0OCNZsV1gSWYelDEDjmjAkMwV7ChCjBQgrziQF2xvt28L2PVOwel2xH1BTFCx7nm/AleJMwT4BQScBwklgqYIdhfZpYSvKROmqBABOpxUECNfEnCWlzECDC3BXCgkrZyzlH7npVw1Yps6rzFzLvlA2LnrkR3eVsH7r0qi0frB3kLSXSPwR140MN3oIW1dh30JYToEroXJqo88vaA0ox46teMF2Q6IHKtlatDkBSOGa5DOUbK7khVl1jYH3SajcfQbBm2C5HiiENhHB3NUSjFO+FJ4hHFe2BmFgGdMGegmaE0Tp/G+CZV1lfZXCCuCeF0i7HiocEqlVV8j7pxY7HN9y5vGKNcHy4EKeJ3DKbWxI0BS298o+F+18G1g3fhsu5gQ8odeYHYI4bmd+QvmqNRTTnoGOFPlZrbhr+BYFlnm4a9B1UfIHLWS8nrUj/kifEzhOvA/rcKTdrXsj9hKHhWmBbvrCA15G6m8edKTPCZwAljWWt1LBMr4ZlOtQjkcpW9GYF4ZO+OzG9TQVw3OE9JY96jCQOblwJ/BgYeQ+a48FbC58zyp/1ll5flDqnpX5eb41DFoA5ZjmDiSsHITjROXMWe6etMXRs2GB/Pw4rbKWusJtOM/L/pFsgSUUl4zjoJzlDpue7C8dGAAHy3+bNgAAAABJRU5ErkJggg==" />
-        </svg>
-      </a>
-    </div>
-
-    <div class="speak-area">
-      <h1>Text 9</h1>
-      <a href="javascript:;" class="speakTxt">
-        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28.039"
-          height="22.822" viewBox="0 0 28.039 22.822">
-          <image id="speaker-filled-audio-tool" width="28.039" height="22.822"
-            xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAAAjCAYAAAANDvOtAAAABHNCSVQICAgIfAhkiAAAA+dJREFUWEfNmGmoTVEUx92QzDMZ4n0wZgoZylBkzvAMH3hJEcos8/TJPMYzJnNIyTyEUKY8MoS8SJQvvJJLHr49w/9/O+e2rPYZ9nlH965a3bPXXWud39lnn7WHRElyRJkskTxwtIDuhRaZmBJZArsYcOsdwK/4bQX9pIHjhK2P5AOhj6CvLN/Wb/gnRMwbXLf8X7A9kfgytJpzg3b4fWkBfBO+fZX/TrRnSVscPTvVGWcy72Y0FlrA1oYve7OWiumM9lPXVlrY7frpncQb8ctxaCMd4PxMBbxFu3kcsOeQxKuUrMF/K2xIHd9N+F2g4niPC7RF6dkcxF2EtvWB8YJdjpih0LvQRR7xrAJ1xX+vcd06Cmw/5ykrBvSaCXY2YvJF3DpcLzPkmQDbEWXvgfZ9m56diYAdIV+tCdb0xbPH2HNavsBQUxgP4HpyWNh9dA4JSjcT7CDYr6gcj9HuYsjLCUJ+oEkODRe2LBp1nKA/Irg6rg9B+RpsxGvM7kKS6SpRH7RvKVt7tJ8rW3fCcsBzPq5ngC1vQyh8vWDLwYfTaRXhewPX/Q33+QBbQ2GfT9gfMFSOCOUV5le6ViFIljW+SU4KfAgpJ9AYKwzHCFsCA4dBnOIHyzlff1TDYWM5lMIyt1oYCghbDEPVOEmRK2hS0K94CWI2KIbxaB8VtneZgr0OCNZsV1gSWYelDEDjmjAkMwV7ChCjBQgrziQF2xvt28L2PVOwel2xH1BTFCx7nm/AleJMwT4BQScBwklgqYIdhfZpYSvKROmqBABOpxUECNfEnCWlzECDC3BXCgkrZyzlH7npVw1Yps6rzFzLvlA2LnrkR3eVsH7r0qi0frB3kLSXSPwR140MN3oIW1dh30JYToEroXJqo88vaA0ox46teMF2Q6IHKtlatDkBSOGa5DOUbK7khVl1jYH3SajcfQbBm2C5HiiENhHB3NUSjFO+FJ4hHFe2BmFgGdMGegmaE0Tp/G+CZV1lfZXCCuCeF0i7HiocEqlVV8j7pxY7HN9y5vGKNcHy4EKeJ3DKbWxI0BS298o+F+18G1g3fhsu5gQ8odeYHYI4bmd+QvmqNRTTnoGOFPlZrbhr+BYFlnm4a9B1UfIHLWS8nrUj/kifEzhOvA/rcKTdrXsj9hKHhWmBbvrCA15G6m8edKTPCZwAljWWt1LBMr4ZlOtQjkcpW9GYF4ZO+OzG9TQVw3OE9JY96jCQOblwJ/BgYeQ+a48FbC58zyp/1ll5flDqnpX5eb41DFoA5ZjmDiSsHITjROXMWe6etMXRs2GB/Pw4rbKWusJtOM/L/pFsgSUUl4zjoJzlDpue7C8dGAAHy3+bNgAAAABJRU5ErkJggg==" />
-        </svg>
-      </a>
-    </div>
-
-    <div class="speak-area">
-      <h1>Text 10</h1>
-      <a href="javascript:;" class="speakTxt">
-        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="28.039"
-          height="22.822" viewBox="0 0 28.039 22.822">
-          <image id="speaker-filled-audio-tool" width="28.039" height="22.822"
-            xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAAAjCAYAAAANDvOtAAAABHNCSVQICAgIfAhkiAAAA+dJREFUWEfNmGmoTVEUx92QzDMZ4n0wZgoZylBkzvAMH3hJEcos8/TJPMYzJnNIyTyEUKY8MoS8SJQvvJJLHr49w/9/O+e2rPYZ9nlH965a3bPXXWud39lnn7WHRElyRJkskTxwtIDuhRaZmBJZArsYcOsdwK/4bQX9pIHjhK2P5AOhj6CvLN/Wb/gnRMwbXLf8X7A9kfgytJpzg3b4fWkBfBO+fZX/TrRnSVscPTvVGWcy72Y0FlrA1oYve7OWiumM9lPXVlrY7frpncQb8ctxaCMd4PxMBbxFu3kcsOeQxKuUrMF/K2xIHd9N+F2g4niPC7RF6dkcxF2EtvWB8YJdjpih0LvQRR7xrAJ1xX+vcd06Cmw/5ykrBvSaCXY2YvJF3DpcLzPkmQDbEWXvgfZ9m56diYAdIV+tCdb0xbPH2HNavsBQUxgP4HpyWNh9dA4JSjcT7CDYr6gcj9HuYsjLCUJ+oEkODRe2LBp1nKA/Irg6rg9B+RpsxGvM7kKS6SpRH7RvKVt7tJ8rW3fCcsBzPq5ngC1vQyh8vWDLwYfTaRXhewPX/Q33+QBbQ2GfT9gfMFSOCOUV5le6ViFIljW+SU4KfAgpJ9AYKwzHCFsCA4dBnOIHyzlff1TDYWM5lMIyt1oYCghbDEPVOEmRK2hS0K94CWI2KIbxaB8VtneZgr0OCNZsV1gSWYelDEDjmjAkMwV7ChCjBQgrziQF2xvt28L2PVOwel2xH1BTFCx7nm/AleJMwT4BQScBwklgqYIdhfZpYSvKROmqBABOpxUECNfEnCWlzECDC3BXCgkrZyzlH7npVw1Yps6rzFzLvlA2LnrkR3eVsH7r0qi0frB3kLSXSPwR140MN3oIW1dh30JYToEroXJqo88vaA0ox46teMF2Q6IHKtlatDkBSOGa5DOUbK7khVl1jYH3SajcfQbBm2C5HiiENhHB3NUSjFO+FJ4hHFe2BmFgGdMGegmaE0Tp/G+CZV1lfZXCCuCeF0i7HiocEqlVV8j7pxY7HN9y5vGKNcHy4EKeJ3DKbWxI0BS298o+F+18G1g3fhsu5gQ8odeYHYI4bmd+QvmqNRTTnoGOFPlZrbhr+BYFlnm4a9B1UfIHLWS8nrUj/kifEzhOvA/rcKTdrXsj9hKHhWmBbvrCA15G6m8edKTPCZwAljWWt1LBMr4ZlOtQjkcpW9GYF4ZO+OzG9TQVw3OE9JY96jCQOblwJ/BgYeQ+a48FbC58zyp/1ll5flDqnpX5eb41DFoA5ZjmDiSsHITjROXMWe6etMXRs2GB/Pw4rbKWusJtOM/L/pFsgSUUl4zjoJzlDpue7C8dGAAHy3+bNgAAAABJRU5ErkJggg==" />
-        </svg>
-      </a>
-    </div>
+      <div class="queue" id="queueInfo">File de lecture: 0 segment.</div>
+    </section>
   </main>
 
-  <!-- partial -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
   <script>
-    $('.speakTxt').on("click", function () {
-      $('.speakTxt').removeClass('active')
-      var texttoread = $(this).parent('.speak-area').find('h1').text();
-      $(this).toggleClass('active')
-      console.log(texttoread);
-      var speech = new SpeechSynthesisUtterance();
-      // Set the text and voice attributes.
-      speech.text = texttoread;
-      speech.volume = 1;
-      speech.rate = 1;
-      speech.pitch = 1;
+    const synth = window.speechSynthesis;
+    const supportStatus = document.getElementById('supportStatus');
+    const textArea = document.getElementById('ttsText');
+    const languageSelect = document.getElementById('languageSelect');
+    const voiceSelect = document.getElementById('voiceSelect');
+    const rateRange = document.getElementById('rateRange');
+    const pitchRange = document.getElementById('pitchRange');
+    const volumeRange = document.getElementById('volumeRange');
+    const rateValue = document.getElementById('rateValue');
+    const pitchValue = document.getElementById('pitchValue');
+    const volumeValue = document.getElementById('volumeValue');
+    const textStats = document.getElementById('textStats');
+    const voiceStats = document.getElementById('voiceStats');
+    const queueInfo = document.getElementById('queueInfo');
 
-      window.speechSynthesis.speak(speech);
+    const samples = {
+      fr: "Bonjour à tous. Cette démonstration propose une voix naturelle et fluide pour le français.",
+      en: "Hello everyone. This advanced text to speech app aims to sound smooth and expressive.",
+      es: "Hola a todos. Esta aplicación de texto a voz ofrece una experiencia natural en varios idiomas.",
+      ar: "مرحباً بالجميع. هذا التطبيق يوفّر تجربة تحويل نص إلى كلام بصوت طبيعي.",
+      ja: "こんにちは。これは多言語対応の自然な音声合成アプリです。"
+    };
+
+    const voiceScore = (voice) => {
+      const name = voice.name.toLowerCase();
+      let score = 0;
+      if (voice.localService) score += 3;
+      if (voice.default) score += 2;
+      if (name.includes('neural') || name.includes('natural')) score += 5;
+      if (name.includes('premium') || name.includes('enhanced')) score += 3;
+      return score;
+    };
+
+    const state = {
+      voices: [],
+      groupedByLang: new Map(),
+      activeQueue: []
+    };
+
+    const updateStats = () => {
+      const content = textArea.value.trim();
+      const words = content ? content.split(/\s+/).length : 0;
+      textStats.textContent = `${content.length} caractères • ${words} mots`;
+      queueInfo.textContent = `File de lecture: ${state.activeQueue.length} segment${state.activeQueue.length > 1 ? 's' : ''}.`;
+    };
+
+    const splitIntoSegments = (text, maxLen = 240) => {
+      const cleaned = text.replace(/\s+/g, ' ').trim();
+      if (!cleaned) return [];
+      const sentences = cleaned.match(/[^.!?।！？]+[.!?।！？]?/g) || [cleaned];
+      const segments = [];
+      let current = '';
+
+      sentences.forEach((sentence) => {
+        if ((current + ' ' + sentence).trim().length <= maxLen) {
+          current = `${current} ${sentence}`.trim();
+        } else {
+          if (current) segments.push(current);
+          if (sentence.length <= maxLen) {
+            current = sentence.trim();
+          } else {
+            const words = sentence.split(' ');
+            let chunk = '';
+            words.forEach((word) => {
+              if ((chunk + ' ' + word).trim().length <= maxLen) {
+                chunk = `${chunk} ${word}`.trim();
+              } else {
+                if (chunk) segments.push(chunk);
+                chunk = word;
+              }
+            });
+            if (chunk) segments.push(chunk);
+            current = '';
+          }
+        }
+      });
+
+      if (current) segments.push(current);
+      return segments;
+    };
+
+    const showStatus = (message, type = 'info') => {
+      supportStatus.className = `status ${type}`;
+      supportStatus.textContent = message;
+    };
+
+    const populateLanguageSelect = () => {
+      const languages = [...state.groupedByLang.keys()].sort((a, b) => a.localeCompare(b));
+      languageSelect.innerHTML = '';
+      languages.forEach((lang) => {
+        const opt = document.createElement('option');
+        opt.value = lang;
+        opt.textContent = lang;
+        languageSelect.appendChild(opt);
+      });
+
+      const browserLang = navigator.language || 'en-US';
+      const direct = languages.find((lang) => lang.toLowerCase() === browserLang.toLowerCase());
+      const family = languages.find((lang) => lang.split('-')[0] === browserLang.split('-')[0]);
+      languageSelect.value = direct || family || languages[0] || '';
+      populateVoiceSelect();
+    };
+
+    const populateVoiceSelect = () => {
+      const lang = languageSelect.value;
+      const voices = (state.groupedByLang.get(lang) || []).slice().sort((a, b) => voiceScore(b) - voiceScore(a));
+      voiceSelect.innerHTML = '';
+
+      voices.forEach((voice) => {
+        const opt = document.createElement('option');
+        opt.value = voice.voiceURI;
+        const tags = [voice.default ? 'défaut' : '', voice.localService ? 'local' : 'cloud'].filter(Boolean).join(' · ');
+        opt.textContent = `${voice.name} (${tags})`;
+        voiceSelect.appendChild(opt);
+      });
+    };
+
+    const loadVoices = () => {
+      state.voices = synth.getVoices();
+      state.groupedByLang = new Map();
+      state.voices.forEach((voice) => {
+        if (!state.groupedByLang.has(voice.lang)) state.groupedByLang.set(voice.lang, []);
+        state.groupedByLang.get(voice.lang).push(voice);
+      });
+
+      voiceStats.textContent = `Voix détectées: ${state.voices.length}`;
+      if (!state.voices.length) {
+        showStatus("Aucune voix disponible pour l'instant. Essayez de recharger la page.", 'warn');
+        return;
+      }
+
+      populateLanguageSelect();
+      showStatus(`Moteur prêt. ${state.voices.length} voix disponibles sur ${state.groupedByLang.size} langues.`, 'ok');
+    };
+
+    const getSelectedVoice = () => state.voices.find((voice) => voice.voiceURI === voiceSelect.value);
+
+    const speak = () => {
+      const text = textArea.value.trim();
+      if (!text) {
+        showStatus('Ajoutez du texte avant de lancer la lecture.', 'warn');
+        return;
+      }
+
+      const selectedVoice = getSelectedVoice();
+      if (!selectedVoice) {
+        showStatus('Veuillez sélectionner une voix valide.', 'warn');
+        return;
+      }
+
+      synth.cancel();
+      const segments = splitIntoSegments(text);
+      state.activeQueue = segments;
+      updateStats();
+
+      if (!segments.length) {
+        showStatus('Le texte est vide après nettoyage.', 'warn');
+        return;
+      }
+
+      segments.forEach((segment, index) => {
+        const utterance = new SpeechSynthesisUtterance(segment);
+        utterance.voice = selectedVoice;
+        utterance.lang = selectedVoice.lang;
+        utterance.rate = Number(rateRange.value);
+        utterance.pitch = Number(pitchRange.value);
+        utterance.volume = Number(volumeRange.value);
+
+        utterance.onstart = () => showStatus(`Lecture segment ${index + 1}/${segments.length} • ${selectedVoice.name}`, 'info');
+        utterance.onend = () => {
+          state.activeQueue = state.activeQueue.slice(1);
+          updateStats();
+          if (index === segments.length - 1) showStatus('Lecture terminée.', 'ok');
+        };
+        utterance.onerror = () => showStatus('Erreur de synthèse vocale sur un segment.', 'warn');
+        synth.speak(utterance);
+      });
+    };
+
+    document.querySelectorAll('[data-sample]').forEach((button) => {
+      button.addEventListener('click', () => {
+        textArea.value = samples[button.dataset.sample] || textArea.value;
+        updateStats();
+      });
     });
-  </script>
 
+    languageSelect.addEventListener('change', populateVoiceSelect);
+    rateRange.addEventListener('input', () => rateValue.value = rateRange.value);
+    pitchRange.addEventListener('input', () => pitchValue.value = pitchRange.value);
+    volumeRange.addEventListener('input', () => volumeValue.value = volumeRange.value);
+
+    document.getElementById('playBtn').addEventListener('click', speak);
+    document.getElementById('pauseBtn').addEventListener('click', () => {
+      if (!synth.speaking) return;
+      if (synth.paused) {
+        synth.resume();
+        showStatus('Lecture reprise.', 'info');
+      } else {
+        synth.pause();
+        showStatus('Lecture en pause.', 'info');
+      }
+    });
+    document.getElementById('stopBtn').addEventListener('click', () => {
+      synth.cancel();
+      state.activeQueue = [];
+      updateStats();
+      showStatus('Lecture stoppée.', 'warn');
+    });
+
+    textArea.addEventListener('input', updateStats);
+
+    if (!('speechSynthesis' in window)) {
+      showStatus('SpeechSynthesis non supporté par ce navigateur.', 'warn');
+    } else {
+      loadVoices();
+      if (typeof synth.onvoiceschanged !== 'undefined') synth.onvoiceschanged = loadVoices;
+    }
+
+    updateStats();
+  </script>
 </body>
 
 </html>
